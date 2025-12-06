@@ -1,20 +1,26 @@
 package com.arnasmat.dcrowd.navigation
 
 import androidx.compose.runtime.Immutable
+import java.math.BigInteger
 
 /**
- * Keys that uniquely identify destinations in the app.
- * In Navigation 3, keys are used to identify content in the back stack.
+ * Navigation destinations for the crowdfunding app
  */
 @Immutable
 sealed interface AppDestination {
     @Immutable
-    data object Home : AppDestination
+    data object ProjectList : AppDestination
 
     @Immutable
-    data object Profile : AppDestination
+    data object CreateProject : AppDestination
 
     @Immutable
-    data class Detail(val itemId: String) : AppDestination
+    data class ProjectDetail(val projectIdx: BigInteger) : AppDestination
+
+    @Immutable
+    data object UserSelector : AppDestination
+
+    @Immutable
+    data object Web3Setup : AppDestination
 }
 

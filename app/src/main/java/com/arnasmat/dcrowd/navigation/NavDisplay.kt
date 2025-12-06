@@ -12,13 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 
-/**
- * NavDisplay is the core component of Navigation 3.
- * It displays the current destination from the back stack and handles transitions.
- *
- * In Navigation 3, you have full control over how destinations are displayed,
- * including support for adaptive layouts that can show multiple destinations at once.
- */
 @Composable
 fun NavDisplay(
     navController: AppNavController,
@@ -51,10 +44,6 @@ fun NavDisplay(
     }
 }
 
-/**
- * Alternative NavDisplay with different animation strategy.
- * This demonstrates how Navigation 3 gives you full control over animations.
- */
 @Composable
 fun NavDisplayWithFadeAnimation(
     navController: AppNavController,

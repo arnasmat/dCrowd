@@ -41,9 +41,9 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun DCrowdApp() {
     // Create and remember the navigation controller
-    // The back stack starts with the Home destination
+    // Start with the Project List screen
     val navController = rememberAppNavController(
-        initialDestination = AppDestination.Home
+        initialDestination = AppDestination.ProjectList
     )
 
     // Handle system back button
@@ -51,12 +51,12 @@ fun DCrowdApp() {
         navController.popBackStack()
     }
 
-    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+    Scaffold(modifier = Modifier.fillMaxSize()) { _ ->
         // NavDisplay is the core of Navigation 3
         // It displays the current destination from the back stack
         NavDisplay(
             navController = navController,
-            modifier = Modifier.fillMaxSize().padding(innerPadding)
+            modifier = Modifier.fillMaxSize()
         )
     }
 }
