@@ -1,10 +1,13 @@
 package com.arnasmat.dcrowd.data.web3
 
 const val BASE_URL = "http://10.0.2.2:8545" // Android emu -> localhost
+const val CONTRACT_ADDRESS = "0x73ad952b2ee756E90F23E24Fea8113d31848b509"
+
 data class GanacheConfig(
     val rpcUrl: String = BASE_URL, // Android emulator to localhost
     val networkId: String = "1337", // Ganache default network ID
-    val chainId: Long = 1337L
+    val chainId: Long = 1337L,
+    val contractAddress: String = CONTRACT_ADDRESS
 )
 
 data class GanacheUser(

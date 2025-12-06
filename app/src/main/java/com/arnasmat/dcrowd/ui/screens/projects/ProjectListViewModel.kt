@@ -18,7 +18,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ProjectListViewModel @Inject constructor(
-    private val repository: CrowdFundingRepository
+    private val repository: CrowdFundingRepository,
+    private val ganacheConfig: com.arnasmat.dcrowd.data.web3.GanacheConfig
 ) : ViewModel() {
 
     val currentUser: StateFlow<GanacheUser?> = repository.currentUserFlow
@@ -32,6 +33,11 @@ class ProjectListViewModel @Inject constructor(
 
     private val _isConnected = MutableStateFlow(false)
     val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
+
+    init {
+        // Automatically connect to the configured contract address on startup
+        connectToContract(ganacheConfig.contractAddress)
+    }
 
     fun connectToContract(contractAddress: String) {
         viewModelScope.launch {

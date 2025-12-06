@@ -3,6 +3,7 @@ package com.arnasmat.dcrowd.ui.screens.setup
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arnasmat.dcrowd.data.repository.CrowdFundingRepository
+import com.arnasmat.dcrowd.data.web3.GanacheConfig
 import com.arnasmat.dcrowd.data.web3.GanacheUser
 import com.arnasmat.dcrowd.data.web3.Web3Result
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,7 +21,8 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class Web3SetupViewModel @Inject constructor(
-    private val repository: CrowdFundingRepository
+    private val repository: CrowdFundingRepository,
+    private val ganacheConfig: GanacheConfig
 ) : ViewModel() {
 
     // Current user flow from repository
@@ -45,6 +47,8 @@ class Web3SetupViewModel @Inject constructor(
 
     init {
         initializeDefaultUser()
+        // Initialize with the configured contract address
+        initializeWithAddress(ganacheConfig.contractAddress)
     }
 
     /**

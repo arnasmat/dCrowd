@@ -6,19 +6,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -27,7 +24,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -58,8 +54,8 @@ import java.math.RoundingMode
 @Composable
 fun Web3SetupScreen(
     onNavigateBack: () -> Unit,
-    viewModel: Web3SetupViewModel = hiltViewModel(),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: Web3SetupViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val currentUser by viewModel.currentUser.collectAsState()
@@ -67,7 +63,6 @@ fun Web3SetupScreen(
     val userBalance by viewModel.userBalance.collectAsState()
 
     var showUserSelector by remember { mutableStateOf(false) }
-    var contractAddressInput by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -95,69 +90,65 @@ fun Web3SetupScreen(
                 fontWeight = FontWeight.Bold
             )
 
-        // Current User Card
-        CurrentUserCard(
-            user = currentUser,
-            balance = userBalance,
-            onSwitchUser = { showUserSelector = !showUserSelector },
-            onRefreshBalance = { viewModel.refreshUserBalance() }
-        )
-
-        // Contract Setup Section
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    text = "Contract Setup",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+            // Contract Address Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer
                 )
-
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     Text(
-                        text = "Connected to:",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = "Contract Address",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = contractAddress ?: "",
+                        text = contractAddress ?: "Not connected",
                         style = MaterialTheme.typography.bodyMedium,
                         fontFamily = FontFamily.Monospace
                     )
+                }
             }
-        }
 
-        // Status Message
-        when (val state = uiState) {
-            is SetupUiState.Loading -> {
-                StatusCard(
-                    message = state.message,
-                    isLoading = true,
-                    isError = false
-                )
+            // Status Message
+            when (val state = uiState) {
+                is SetupUiState.Loading -> {
+                    StatusCard(
+                        message = state.message,
+                        isLoading = true,
+                        isError = false
+                    )
+                }
+                is SetupUiState.Success -> {
+                    StatusCard(
+                        message = state.message,
+                        isLoading = false,
+                        isError = false
+                    )
+                }
+                is SetupUiState.Error -> {
+                    StatusCard(
+                        message = state.message,
+                        isLoading = false,
+                        isError = true
+                    )
+                }
+                SetupUiState.Initial -> {
+                    // No status
+                }
             }
-            is SetupUiState.Success -> {
-                StatusCard(
-                    message = state.message,
-                    isLoading = false,
-                    isError = false
-                )
-            }
-            is SetupUiState.Error -> {
-                StatusCard(
-                    message = state.message,
-                    isLoading = false,
-                    isError = true
-                )
-            }
-            SetupUiState.Initial -> {
-                // No status
-            }
-        }
+
+            // Current User Card
+            CurrentUserCard(
+                user = currentUser,
+                balance = userBalance,
+                onSwitchUser = { showUserSelector = true },
+                onRefreshBalance = { viewModel.refreshUserBalance() }
+            )
 
             // User Selector
             if (showUserSelector) {
@@ -185,11 +176,13 @@ fun CurrentUserCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -199,7 +192,7 @@ fun CurrentUserCard(
                 Text(
                     text = "Current User",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.Medium
                 )
 
                 OutlinedButton(onClick = onSwitchUser) {
@@ -339,7 +332,6 @@ fun UserSelector(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserItem(
     user: GanacheUser,
