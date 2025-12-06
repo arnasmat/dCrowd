@@ -1,6 +1,9 @@
 package com.arnasmat.dcrowd.ui.screens.create
 
+import android.app.DatePickerDialog
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -35,10 +39,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import java.math.BigInteger
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,17 +58,24 @@ fun CreateProjectScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val createdProjectIdx by viewModel.createdProjectIdx.collectAsState()
-    
+
     var name by remember { mutableStateOf("") }
     var imageUrl by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    val milestones = remember { mutableStateListOf(MilestoneInput("10", System.currentTimeMillis() / 1000 + 86400)) }
-    
+    val milestones = remember {
+        mutableStateListOf(
+            MilestoneInput(
+                "10",
+                System.currentTimeMillis() / 1000 + 86400
+            )
+        )
+    }
+
     // Navigate on success
     if (createdProjectIdx != null && uiState is CreateProjectUiState.Success) {
         onProjectCreated(createdProjectIdx!!)
     }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -85,7 +101,7 @@ fun CreateProjectScreen(
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
-            
+
             // Status messages
             when (val state = uiState) {
                 is CreateProjectUiState.Loading -> {
@@ -105,6 +121,7 @@ fun CreateProjectScreen(
                         }
                     }
                 }
+
                 is CreateProjectUiState.Success -> {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -119,6 +136,7 @@ fun CreateProjectScreen(
                         )
                     }
                 }
+
                 is CreateProjectUiState.Error -> {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -133,9 +151,10 @@ fun CreateProjectScreen(
                         )
                     }
                 }
+
                 CreateProjectUiState.Editing -> {}
             }
-            
+
             // Form
             OutlinedTextField(
                 value = name,
@@ -144,7 +163,7 @@ fun CreateProjectScreen(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
-            
+
             OutlinedTextField(
                 value = imageUrl,
                 onValueChange = { imageUrl = it },
@@ -152,7 +171,7 @@ fun CreateProjectScreen(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
-            
+
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
@@ -161,9 +180,9 @@ fun CreateProjectScreen(
                 minLines = 3,
                 maxLines = 5
             )
-            
+
             Spacer(Modifier.height(8.dp))
-            
+
             // Milestones
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -175,7 +194,7 @@ fun CreateProjectScreen(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                
+
                 IconButton(
                     onClick = {
                         milestones.add(
@@ -189,19 +208,22 @@ fun CreateProjectScreen(
                     Icon(Icons.Default.Add, "Add Milestone")
                 }
             }
-            
+
             milestones.forEachIndexed { index, milestone ->
                 MilestoneCard(
                     milestone = milestone,
                     onGoalChange = { milestones[index] = milestone.copy(goalAmountEth = it) },
+                    onDeadlineChange = {
+                        milestones[index] = milestone.copy(deadlineTimestamp = it)
+                    },
                     onDelete = if (milestones.size > 1) {
                         { milestones.removeAt(index) }
                     } else null
                 )
             }
-            
+
             Spacer(Modifier.height(16.dp))
-            
+
             Button(
                 onClick = {
                     viewModel.createProject(name, imageUrl, description, milestones)
@@ -219,9 +241,17 @@ fun CreateProjectScreen(
 fun MilestoneCard(
     milestone: MilestoneInput,
     onGoalChange: (String) -> Unit,
+    onDeadlineChange: (Long) -> Unit,
     onDelete: (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val displayFormat = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
+
+    val dateText = remember(milestone.deadlineTimestamp) {
+        displayFormat.format(Date(milestone.deadlineTimestamp * 1000L))
+    }
+
     Card(
         modifier = modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -241,16 +271,50 @@ fun MilestoneCard(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
-                
+
                 Spacer(Modifier.height(4.dp))
-                
-                Text(
-                    text = "Deadline: ${milestone.deadlineTimestamp / 86400} days from now",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+
+                // Deadline picker - click to open date picker
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            val cal = Calendar.getInstance().apply {
+                                timeInMillis = milestone.deadlineTimestamp * 1000L
+                            }
+                            val dpd = DatePickerDialog(
+                                context,
+                                { _, year, month, dayOfMonth ->
+                                    val c = Calendar.getInstance().apply {
+                                        set(year, month, dayOfMonth, 0, 0, 0)
+                                        set(Calendar.MILLISECOND, 0)
+                                    }
+                                    onDeadlineChange(c.timeInMillis / 1000L)
+                                },
+                                cal.get(Calendar.YEAR),
+                                cal.get(Calendar.MONTH),
+                                cal.get(Calendar.DAY_OF_MONTH)
+                            )
+                            dpd.show()
+                        }
+                ) {
+                    OutlinedTextField(
+                        value = dateText,
+                        onValueChange = { },
+                        label = { Text("Deadline") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        readOnly = true,
+                        enabled = false,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                            disabledBorderColor = MaterialTheme.colorScheme.outline,
+                            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    )
+                }
             }
-            
+
             if (onDelete != null) {
                 IconButton(onClick = onDelete) {
                     Icon(Icons.Default.Delete, "Delete")

@@ -35,7 +35,7 @@ class ProjectListViewModel @Inject constructor(
     val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
 
     init {
-        // Automatically connect to the configured contract address on startup
+        // Auto-connect to configured contract address
         connectToContract(ganacheConfig.contractAddress)
     }
 

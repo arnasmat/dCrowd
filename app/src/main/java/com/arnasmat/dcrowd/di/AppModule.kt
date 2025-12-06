@@ -22,12 +22,7 @@ object AppModule {
     @Provides
     @Singleton
     fun provideGanacheConfig(): GanacheConfig {
-        return GanacheConfig(
-            rpcUrl = "http://10.0.2.2:8545", // Android emulator to localhost
-            networkId = "1337",
-            chainId = 1337L,
-            contractAddress = "0x73ad952b2ee756E90F23E24Fea8113d31848b509" // Deployed contract address
-        )
+        return GanacheConfig()
     }
 
     @Provides
