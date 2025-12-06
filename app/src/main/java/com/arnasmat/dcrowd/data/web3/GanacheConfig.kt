@@ -1,7 +1,7 @@
 package com.arnasmat.dcrowd.data.web3
 
 const val BASE_URL = "http://10.0.2.2:8545" // Android emu -> localhost
-const val CONTRACT_ADDRESS = "0x73ad952b2ee756E90F23E24Fea8113d31848b509"
+const val CONTRACT_ADDRESS = "0x488AbEF9C20E874C9c6dB01f336E5503B81a7E7D"
 
 data class GanacheConfig(
     val rpcUrl: String = BASE_URL, // Android emulator to localhost
@@ -21,33 +21,33 @@ data class GanacheUser(
 object GanacheAccounts {
     val DEFAULT_ACCOUNTS = listOf(
         GanacheUser(
-            address = "0x5f97B587F34217DDfE854a37f6C43930cF40b16F",
-            privateKey = "0xd0181b987c9f994cbd8c7ad65c01f15f131bcdf5d8f3c0f874d757c8a1764aba",
+            address = "0xa12A900c8ceD65FEd7b8162819098c15c7287FCc",
+            privateKey = "0x47706c09ee4b047508a8d42c0b66badc49036bbd444cfc95a7f5a5f0fdc5647a",
             name = "sysOwner"
         ),
         GanacheUser(
-            address = "0x21B2CB19029cC2c3333Adda07485eb7637b75BeC",
-            privateKey = "0x6136062b2ad9a270f32fd0e8f25e34b60a16b19aefdb9340c05f1665ddced2fe",
+            address = "0xb31CF9647f3BedFDe0055b567e42D6a9e11B6eDE",
+            privateKey = "0xba76712515bcb5a8038d814f87d53d873577b3f0c8d230b86e0b004cb86bbe8d",
             name = "U1"
         ),
         GanacheUser(
-            address = "0x32DeeD540F218E77835D82ab54620a73382b11AA",
-            privateKey = "0xb6a402bc4fd15cb2ddc5942732c95691fcdca8e581a5ec30ae9b3dadba24d4ee",
+            address = "0x6403ec956DFA24ff4347C6178551e775adFeB1CA",
+            privateKey = "0x2f25619f824433886bea991ee79ac78797311bb5853773e6c537be28e8398384",
             name = "U2"
         ),
         GanacheUser(
-            address = "0x2F990dF8A9e7c64926A95B2732c8de8e5Fa3226d",
-            privateKey = "0xe611ad3b8212d04ca128e7a6a0c59a761f5bfca3de683cf279f51358db57f8b6",
+            address = "0x7Be8b48f49019980DC6a4fbf16d0339EC66654e9",
+            privateKey = "0x4e69ed6eb6b0d53161f7a8a267a57fc11f0d3667f3ecc0e9ea3c42d501fa2868",
             name = "U3"
         ),
         GanacheUser(
-            address = "0x29a1b10E45687cd08d8348FC10dB29fa304c8E04",
-            privateKey = "0x76d58fbc457d362052fc76a5a2d3d8e00af5f9fbc207cd6dda57f68f87d8663a",
+            address = "0x57AA9845B94dF9194D6bfa203C64c54d7596E704",
+            privateKey = "0x9a306386340e2280b9fdea5a5529033e7654986d50ccb6dbb5edd48248591681",
             name = "U4"
         ),
         GanacheUser(
-            address = "0x7737a8B2Cd581Aabe5015fab574AefF72f43Ffcf",
-            privateKey = "0xe7712bf048254f793c52a38a99c66ddf814aa10bcb625c47596c0af3be939f25",
+            address = "0x4a194E4be25a4cCF59A9CCa556263a063256F428",
+            privateKey = "0x10d8c1e3ae963d0286ce02255aec25a87fddbbb8f17a15fea422f65233681878",
             name = "U5"
         ),
         GanacheUser(

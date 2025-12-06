@@ -242,6 +242,7 @@ fun ProjectDetailScreen(
                                     style = MaterialTheme.typography.headlineSmall,
                                     fontWeight = FontWeight.Bold
                                 )
+                                // TODO: add other milestones
                             }
                         }
 
