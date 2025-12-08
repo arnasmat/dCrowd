@@ -12,7 +12,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.builtins.UIntArraySerializer
 import java.math.BigInteger
 import javax.inject.Inject
 
@@ -25,32 +27,31 @@ class ProjectListViewModel @Inject constructor(
     val currentUser: StateFlow<GanacheUser?> = repository.currentUserFlow
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    private val _projects = MutableStateFlow<List<ProjectWithIndex>>(emptyList())
-    val projects: StateFlow<List<ProjectWithIndex>> = _projects.asStateFlow()
 
-    private val _uiState = MutableStateFlow<UiState>(UiState.Initial)
-    val uiState: StateFlow<UiState> = _uiState.asStateFlow()
+//    private val _uiState = MutableStateFlow<UiState>(UiState.Initial)
+//    val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
-    private val _isConnected = MutableStateFlow(false)
-    val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
+    private val _state = MutableStateFlow(ProjectListState())
+    val state = _state.asStateFlow()
 
     init {
-        // Auto-connect to configured contract address
         connectToContract(ganacheConfig.contractAddress)
     }
 
     fun connectToContract(contractAddress: String) {
         viewModelScope.launch {
-            _uiState.value = UiState.Loading
+            _state.newUiState(UiState.Loading)
 
             when (val result = repository.initializeAddress(contractAddress)) {
                 is Web3Result.Success -> {
-                    _isConnected.value = true
-                    _uiState.value = UiState.Success("Connected successfully")
+                    _state.update { it.copy(
+                        isConnected = true,
+                        uiState = UiState.Success("Connected successfully"),
+                    ) }
                     loadProjects()
                 }
                 is Web3Result.Error -> {
-                    _uiState.value = UiState.Error(result.message)
+                    _state.newUiState(UiState.Error(result.message))
                 }
                 Web3Result.Loading -> {}
             }
@@ -59,7 +60,7 @@ class ProjectListViewModel @Inject constructor(
 
     fun loadProjects() {
         viewModelScope.launch {
-            _uiState.value = UiState.Loading
+            _state.newUiState(UiState.Loading)
 
             // Load projects 0-9 (adjust based on your needs)
             val projectsList = mutableListOf<ProjectWithIndex>()
@@ -77,12 +78,15 @@ class ProjectListViewModel @Inject constructor(
                 }
             }
 
-            _projects.value = projectsList
-            _uiState.value = if (projectsList.isEmpty()) {
-                UiState.Success("No projects found")
-            } else {
-                UiState.Success("Loaded ${projectsList.size} projects")
-            }
+            _state.update { it.copy(
+                projects = projectsList,
+                uiState = if (projectsList.isEmpty()) {
+                    UiState.Success("No projects found")
+                } else {
+                    UiState.Success("Loaded ${projectsList.size} projects")
+                }
+                ) }
+
         }
     }
 
@@ -91,6 +95,10 @@ class ProjectListViewModel @Inject constructor(
             repository.getCurrentUserBalance()
         }
     }
+}
+
+private fun MutableStateFlow<ProjectListState>.newUiState(newState: UiState) {
+    this.update { it.copy(uiState = newState) }
 }
 
 data class ProjectWithIndex(
@@ -104,4 +112,11 @@ sealed class UiState {
     data class Success(val message: String) : UiState()
     data class Error(val message: String) : UiState()
 }
+
+data class ProjectListState(
+    val isConnected: Boolean = false,
+    val isRefreshing: Boolean = false,
+    val projects: List<ProjectWithIndex> = emptyList(),
+    val uiState: UiState = UiState.Initial
+)
 

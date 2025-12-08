@@ -36,11 +36,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arnasmat.dcrowd.data.web3.Project
+import com.arnasmat.dcrowd.ui.common.ui.CoilImage
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.math.RoundingMode
@@ -54,10 +57,8 @@ fun ProjectListScreen(
     onSetupClick: () -> Unit,
     viewModel: ProjectListViewModel = hiltViewModel()
 ) {
-    val projects by viewModel.projects.collectAsState()
-    val uiState by viewModel.uiState.collectAsState()
     val currentUser by viewModel.currentUser.collectAsState()
-    val isConnected by viewModel.isConnected.collectAsState()
+    val state = viewModel.state.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -77,7 +78,7 @@ fun ProjectListScreen(
             )
         },
         floatingActionButton = {
-            if (isConnected) {
+            if (state.value.isConnected) {
                 FloatingActionButton(onClick = onCreateProjectClick) {
                     Icon(Icons.Default.Add, "Create Project")
                 }
@@ -121,7 +122,7 @@ fun ProjectListScreen(
             }
 
             // Status
-            when (val state = uiState) {
+            when (state.value.uiState) {
                 is UiState.Loading -> {
                     Box(
                         modifier = Modifier
@@ -132,6 +133,7 @@ fun ProjectListScreen(
                         CircularProgressIndicator()
                     }
                 }
+
                 is UiState.Error -> {
                     Card(
                         modifier = Modifier
@@ -142,17 +144,18 @@ fun ProjectListScreen(
                         )
                     ) {
                         Text(
-                            text = state.message,
+                            text = (state.value.uiState as UiState.Error).message,
                             modifier = Modifier.padding(16.dp),
                             color = MaterialTheme.colorScheme.onErrorContainer
                         )
                     }
                 }
+
                 else -> {}
             }
 
             // Projects List
-            if (!isConnected) {
+            if (!state.value.isConnected) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -171,7 +174,7 @@ fun ProjectListScreen(
                         )
                     }
                 }
-            } else if (projects.isEmpty() && uiState !is UiState.Loading) {
+            } else if (state.value.projects.isEmpty() && state.value.uiState !is UiState.Loading) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -195,9 +198,8 @@ fun ProjectListScreen(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(projects) { projectWithIndex ->
+                    items(state.value.projects) { projectWithIndex ->
                         ProjectCard(
-                            projectIdx = projectWithIndex.index,
                             project = projectWithIndex.project,
                             onClick = { onProjectClick(projectWithIndex.index) }
                         )
@@ -210,7 +212,6 @@ fun ProjectListScreen(
 
 @Composable
 fun ProjectCard(
-    projectIdx: BigInteger,
     project: Project,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -220,12 +221,12 @@ fun ProjectCard(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -238,34 +239,17 @@ fun ProjectCard(
                     modifier = Modifier.weight(1f)
                 )
 
-                if (project.isActive) {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                        )
-                    ) {
-                        Text(
-                            text = "Active",
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                } else {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
-                        )
-                    ) {
-                        Text(
-                            text = "Inactive",
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                    }
-                }
+                ProjectStatusCard(
+                    isActive = project.isActive
+                )
             }
+            CoilImage(
+                url = project.headerImageUrl,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(70.dp)
+                    .clip(MaterialTheme.shapes.medium)
+            )
 
             Text(
                 text = project.description,
@@ -307,13 +291,25 @@ fun ProjectCard(
                     )
                 }
             }
-
-            Text(
-                text = "Project #$projectIdx",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
+    }
+}
+
+@Composable
+private fun ProjectStatusCard(
+    isActive: Boolean,
+) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = if (isActive) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
+        )
+    ) {
+        Text(
+            text = if (isActive) "Active" else "Inactive",
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
+        )
     }
 }
 
