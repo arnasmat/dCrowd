@@ -1,7 +1,7 @@
 package com.arnasmat.dcrowd.data.web3
 
 const val BASE_URL = "http://10.0.2.2:8545" // Android emu -> localhost
-const val CONTRACT_ADDRESS = "0xFe4F2B55064De1317597BaC58f553306370eD8Fa"
+const val CONTRACT_ADDRESS = "0xB22A5FbDFD3260865BF1F6EC636F54bE4B6B2548"
 
 data class GanacheConfig(
     val rpcUrl: String = BASE_URL, // Android emulator to localhost
@@ -21,18 +21,18 @@ data class GanacheUser(
 object GanacheAccounts {
     val DEFAULT_ACCOUNTS = listOf(
         GanacheUser(
-            address = "0x5Da2e4EfCb05886CE271f0c2955F738E3DC7726D",
-            privateKey = "0xefaeda48e28724abb14b7d5cd3c6d12595d7966bdedaa290aa54b5e375a8f74e",
+            address = "0x3c70032309dfa3Fe3Def41D655EF493f3d8aE6f0",
+            privateKey = "0x11d30810fd899cd7504afed1cba382a70cc8cc007636ae0cf423b21c74a66fb8",
             name = "sysOwner"
         ),
         GanacheUser(
-            address = "0x6ba27592Dcc292eBCec39ad1BCB35315Ab7862cc",
-            privateKey = "0xd4407949cd0a4fced2f387b6d74eacefcd1c97113b58554b9bea451ecfe72e88",
+            address = "0xE29c3729Fdd6CB37C7FCBd0Bdc98336eeeAa5b4C",
+            privateKey = "0xfd2c4b826189f91257a0be4c08611955d9bb12d243e9a341d9edf05d9db28c36",
             name = "U1"
         ),
         GanacheUser(
-            address = "0xADEF3AC75146814e25b9BAE5c46674Ec919B079D",
-            privateKey = "0xca383aba73a62f7c0346b24b9aa58d72946f5b7571dba8d6c7d43e81515be557",
+            address = "0xe718e9c66b8bd5DAba5e4Cc2eb8e03C51e676E05",
+            privateKey = "0xd34e51f336c0fc5fd6d5b1ac3a431a5447bceb68e0d66333cd96294cb62f5662",
             name = "U2"
         ),
         GanacheUser(

@@ -82,6 +82,7 @@ fun ProjectListScreen(
             onRefresh = viewModel::loadProjects,
             modifier = Modifier.padding(padding).padding(16.dp)
         ) {
+            // TODO: fix refreshing here lol
             when (state.value.uiState) {
                 is UiState.Loading -> {
                     Loader()
