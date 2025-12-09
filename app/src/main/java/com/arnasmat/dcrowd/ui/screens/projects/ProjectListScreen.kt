@@ -49,7 +49,6 @@ import java.math.RoundingMode
 fun ProjectListScreen(
     onProjectClick: (BigInteger) -> Unit,
     onCreateProjectClick: () -> Unit,
-    onUserSelectorClick: () -> Unit,
     onSetupClick: () -> Unit,
     viewModel: ProjectListViewModel = hiltViewModel()
 ) {
@@ -60,9 +59,6 @@ fun ProjectListScreen(
             TopAppBar(
                 title = { Text("dCrowd <3") },
                 actions = {
-                    IconButton(onClick = onUserSelectorClick) {
-                        Icon(Icons.Default.Person, "Switch User")
-                    }
                     IconButton(onClick = onSetupClick) {
                         Icon(Icons.Default.Settings, "Setup")
                     }

@@ -39,8 +39,5 @@ data class ProjectDetail(
 ) : NavKey
 
 @Serializable
-data object UserSelector : NavKey
-
-@Serializable
 data object Web3Setup : NavKey
 

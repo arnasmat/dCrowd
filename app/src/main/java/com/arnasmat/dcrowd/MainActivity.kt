@@ -16,14 +16,12 @@ import androidx.navigation3.ui.NavDisplay
 import com.arnasmat.dcrowd.navigation.CreateProject
 import com.arnasmat.dcrowd.navigation.ProjectDetail
 import com.arnasmat.dcrowd.navigation.ProjectList
-import com.arnasmat.dcrowd.navigation.UserSelector
 import com.arnasmat.dcrowd.navigation.Web3Setup
 import com.arnasmat.dcrowd.ui.common.theme.DCrowdTheme
 import com.arnasmat.dcrowd.ui.screens.create.CreateProjectScreen
 import com.arnasmat.dcrowd.ui.screens.detail.ProjectDetailScreen
 import com.arnasmat.dcrowd.ui.screens.projects.ProjectListScreen
-import com.arnasmat.dcrowd.ui.screens.setup.Web3SetupScreen
-import com.arnasmat.dcrowd.ui.screens.user.UserSelectorScreen
+import com.arnasmat.dcrowd.ui.screens.settings.SettingsScreen
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -63,9 +61,6 @@ fun DCrowdApp() {
                         onCreateProjectClick = {
                             backStack.add(CreateProject)
                         },
-                        onUserSelectorClick = {
-                            backStack.add(UserSelector)
-                        },
                         onSetupClick = {
                             backStack.add(Web3Setup)
                         }
@@ -93,16 +88,8 @@ fun DCrowdApp() {
                     )
                 }
 
-                is UserSelector -> NavEntry(key) {
-                    UserSelectorScreen(
-                        onNavigateBack = {
-                            backStack.removeLastOrNull()
-                        }
-                    )
-                }
-
                 is Web3Setup -> NavEntry(key) {
-                    Web3SetupScreen(
+                    SettingsScreen(
                         onNavigateBack = {
                             backStack.removeLastOrNull()
                         }

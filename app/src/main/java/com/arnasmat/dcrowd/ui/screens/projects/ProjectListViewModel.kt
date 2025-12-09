@@ -81,12 +81,6 @@ class ProjectListViewModel @Inject constructor(
 
         }
     }
-
-    fun refreshBalance() {
-        viewModelScope.launch {
-            repository.getCurrentUserBalance()
-        }
-    }
 }
 
 private fun MutableStateFlow<ProjectListState>.newUiState(newState: UiState) {

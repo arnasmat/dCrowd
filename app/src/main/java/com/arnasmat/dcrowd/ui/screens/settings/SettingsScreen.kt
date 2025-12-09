@@ -1,4 +1,4 @@
-package com.arnasmat.dcrowd.ui.screens.setup
+package com.arnasmat.dcrowd.ui.screens.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -40,34 +40,24 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arnasmat.dcrowd.data.web3.GanacheUser
 import java.math.RoundingMode
 
-/**
- * Web3 Setup Screen
- * Allows users to:
- * 1. Connect to deployed contract
- * 2. Switch between Ganache accounts
- * 3. View account balances
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Web3SetupScreen(
+fun SettingsScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: Web3SetupViewModel = hiltViewModel()
+    viewModel: SettingsViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val currentUser by viewModel.currentUser.collectAsState()
-    val contractAddress by viewModel.contractAddress.collectAsState()
-    val userBalance by viewModel.userBalance.collectAsState()
-
     var showUserSelector by remember { mutableStateOf(false) }
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Web3 Setup") },
+                title = { Text("Settings") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -83,14 +73,6 @@ fun Web3SetupScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Header
-            Text(
-                text = "⚙️ Web3 Configuration",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-
-            // Contract Address Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -107,53 +89,49 @@ fun Web3SetupScreen(
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = contractAddress ?: "Not connected",
+                        text = state.contractAddress ?: "Not connected",
                         style = MaterialTheme.typography.bodyMedium,
                         fontFamily = FontFamily.Monospace
                     )
                 }
             }
 
-            // Status Message
-            when (val state = uiState) {
-                is SetupUiState.Loading -> {
+            when (state.uiState) {
+                is SettingsUiState.Loading -> {
                     StatusCard(
-                        message = state.message,
+                        message = "",
                         isLoading = true,
                         isError = false
                     )
                 }
-                is SetupUiState.Success -> {
+                is SettingsUiState.Success -> {
                     StatusCard(
-                        message = state.message,
+                        message = (state.uiState as SettingsUiState.Success).message,
                         isLoading = false,
                         isError = false
                     )
                 }
-                is SetupUiState.Error -> {
+                is SettingsUiState.Error -> {
                     StatusCard(
-                        message = state.message,
+                        message = (state.uiState as SettingsUiState.Error).message,
                         isLoading = false,
                         isError = true
                     )
                 }
-                SetupUiState.Initial -> {
-                    // No status
+                SettingsUiState.Initial -> {
                 }
             }
 
-            // Current User Card
             CurrentUserCard(
-                user = currentUser,
-                balance = userBalance,
+                user = state.currentUser,
+                balance = state.userBalance,
                 onSwitchUser = { showUserSelector = true },
                 onRefreshBalance = { viewModel.refreshUserBalance() }
             )
 
-            // User Selector
             if (showUserSelector) {
                 UserSelector(
-                    currentUser = currentUser,
+                    currentUser = state.currentUser,
                     availableUsers = viewModel.getAvailableUsers(),
                     onUserSelected = { user ->
                         viewModel.switchUser(user)
