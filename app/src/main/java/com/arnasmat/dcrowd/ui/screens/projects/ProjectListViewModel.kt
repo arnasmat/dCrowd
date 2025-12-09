@@ -23,14 +23,6 @@ class ProjectListViewModel @Inject constructor(
     private val repository: CrowdFundingRepository,
     private val ganacheConfig: com.arnasmat.dcrowd.data.web3.GanacheConfig
 ) : ViewModel() {
-
-    val currentUser: StateFlow<GanacheUser?> = repository.currentUserFlow
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
-
-
-//    private val _uiState = MutableStateFlow<UiState>(UiState.Initial)
-//    val uiState: StateFlow<UiState> = _uiState.asStateFlow()
-
     private val _state = MutableStateFlow(ProjectListState())
     val state = _state.asStateFlow()
 
@@ -62,7 +54,7 @@ class ProjectListViewModel @Inject constructor(
         viewModelScope.launch {
             _state.newUiState(UiState.Loading)
 
-            // Load projects 0-9 (adjust based on your needs)
+            // TODO: get full size of projects and load it, perhaps even paginate
             val projectsList = mutableListOf<ProjectWithIndex>()
 
             for (i in 0..9) {
