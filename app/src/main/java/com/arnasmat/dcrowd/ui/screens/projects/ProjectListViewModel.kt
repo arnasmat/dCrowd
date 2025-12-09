@@ -58,6 +58,10 @@ class ProjectListViewModel @Inject constructor(
         }
     }
 
+    fun onRefresh() {
+        loadProjects()
+    }
+
     fun loadProjects() {
         viewModelScope.launch {
             _state.newUiState(UiState.Loading)

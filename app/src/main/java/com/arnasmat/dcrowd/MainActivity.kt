@@ -40,13 +40,10 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun DCrowdApp() {
-    // Create and remember the navigation controller
-    // Start with the Project List screen
     val navController = rememberAppNavController(
         initialDestination = AppDestination.ProjectList
     )
 
-    // Handle system back button
     BackHandler(enabled = navController.backStack.size > 1) {
         navController.popBackStack()
     }

@@ -5,45 +5,41 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arnasmat.dcrowd.data.web3.Project
-import com.arnasmat.dcrowd.ui.common.ui.CoilImage
+import com.arnasmat.dcrowd.ui.common.composable.CoilImage
+import com.arnasmat.dcrowd.ui.common.composable.Loader
+import org.web3j.utils.Convert
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.math.RoundingMode
@@ -57,17 +53,13 @@ fun ProjectListScreen(
     onSetupClick: () -> Unit,
     viewModel: ProjectListViewModel = hiltViewModel()
 ) {
-    val currentUser by viewModel.currentUser.collectAsState()
     val state = viewModel.state.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("dCrowd - Crowdfunding") },
+                title = { Text("dCrowd <3") },
                 actions = {
-                    IconButton(onClick = { viewModel.loadProjects() }) {
-                        Icon(Icons.Default.Refresh, "Refresh")
-                    }
                     IconButton(onClick = onUserSelectorClick) {
                         Icon(Icons.Default.Person, "Switch User")
                     }
@@ -85,120 +77,36 @@ fun ProjectListScreen(
             }
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
+        PullToRefreshBox(
+            isRefreshing = state.value.isRefreshing,
+            onRefresh = viewModel::loadProjects,
+            modifier = Modifier.padding(padding).padding(16.dp)
         ) {
-            // Current User Info
-            currentUser?.let { user ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.Person, null, Modifier.size(24.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Column {
-                            Text(
-                                text = user.name,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = user.address.take(10) + "..." + user.address.takeLast(6),
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Status
             when (state.value.uiState) {
                 is UiState.Loading -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
+                    Loader()
                 }
 
                 is UiState.Error -> {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
-                        )
-                    ) {
-                        Text(
-                            text = (state.value.uiState as UiState.Error).message,
-                            modifier = Modifier.padding(16.dp),
-                            color = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                    }
+                    ErrorCard(errorMessage = state.value.uiState as UiState.Error)
                 }
 
                 else -> {}
             }
 
-            // Projects List
             if (!state.value.isConnected) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Text(
-                            text = "Not Connected",
-                            style = MaterialTheme.typography.headlineSmall
-                        )
-                        Text(
-                            text = "Click settings to connect to contract",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
+                NotConnectedCard()
             } else if (state.value.projects.isEmpty() && state.value.uiState !is UiState.Loading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Text(
-                            text = "No Projects Yet",
-                            style = MaterialTheme.typography.headlineSmall
-                        )
-                        Text(
-                            text = "Create your first project!",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
+                EmptyProjectCard()
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(state.value.projects) { projectWithIndex ->
+                    items(
+                        items = state.value.projects,
+                        key = { it.index }
+                    ) { projectWithIndex ->
                         ProjectCard(
                             project = projectWithIndex.project,
                             onClick = { onProjectClick(projectWithIndex.index) }
@@ -206,6 +114,68 @@ fun ProjectListScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun ErrorCard(errorMessage: UiState.Error) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer
+        )
+    ) {
+        Text(
+            text = errorMessage.message,
+            modifier = Modifier.padding(16.dp),
+            color = MaterialTheme.colorScheme.onErrorContainer
+        )
+    }
+}
+
+@Composable
+fun NotConnectedCard() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "Not Connected",
+                style = MaterialTheme.typography.headlineSmall
+            )
+            Text(
+                text = "Click settings to connect to contract",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
+}
+
+@Composable
+fun EmptyProjectCard() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "No Projects Yet",
+                style = MaterialTheme.typography.headlineSmall
+            )
+            Text(
+                text = "Create your first project!",
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     }
 }
@@ -219,76 +189,62 @@ fun ProjectCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
             .clickable(onClick = onClick),
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = project.name,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
-                )
-
-                ProjectStatusCard(
-                    isActive = project.isActive
+        Column {
+            if(!project.headerImageUrl.isEmpty()) {
+                CoilImage(
+                    url = project.headerImageUrl,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp)
+                        .clip(MaterialTheme.shapes.medium)
                 )
             }
-            CoilImage(
-                url = project.headerImageUrl,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(70.dp)
-                    .clip(MaterialTheme.shapes.medium)
-            )
-
-            Text(
-                text = project.description,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Spacer(Modifier.height(4.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
-                        text = "Funded",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = weiToEthString(project.totalFunded) + " ETH",
-                        style = MaterialTheme.typography.titleMedium,
+                        text = project.name,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    ProjectStatusCard(
+                        isActive = project.isActive
                     )
                 }
 
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = "Milestone",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "#${project.currentMilestoneIdx}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+
+                Text(
+                    text = project.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        FundedElement(project.totalFunded)
+                    }
+
+                    Column(horizontalAlignment = Alignment.End) {
+                        // TODO: Use getter to get milestone goal and deadline and show it
+                        // todo: remake the scren and all the todo's in chat w/ justin
+                        MilestoneElement(BigInteger.ONE, "2024-12-31")
+                    }
                 }
             }
         }
@@ -313,8 +269,100 @@ private fun ProjectStatusCard(
     }
 }
 
+@Composable
+private fun FundedElement(
+    totalFunded: BigInteger = BigInteger.ZERO
+) {
+    val oneEth = Convert.toWei("1", Convert.Unit.ETHER).toBigInteger()
+    val oneGWei = Convert.toWei("1", Convert.Unit.GWEI).toBigInteger()
+    val text = if (totalFunded >= oneEth) {
+        weiToEthString(totalFunded) + "ETH"
+    } else if (totalFunded >= oneGWei) {
+        weiToGWeiString(totalFunded) + " GWei"
+    } else {
+        totalFunded.toString() + " Wei"
+    }
+
+    Text(
+        text = "Funded",
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary
+    )
+}
+
+@Composable
+private fun MilestoneElement(
+    currentMilestoneGoal: BigInteger,
+    currentMilestoneDeadline: String,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+
+        MilestoneSingular(
+            labelText = "Milestone goal",
+            text = weiToEthString(currentMilestoneGoal) + " ETH"
+        )
+        MilestoneSingular(
+            labelText = "Deadline",
+            text = currentMilestoneDeadline
+        )
+    }
+
+}
+
+@Composable
+private fun MilestoneSingular(
+    labelText: String,
+    text: String,
+) {
+    Column {
+        Text(
+            text = labelText,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+// TODO: move out of screen
 fun weiToEthString(wei: BigInteger): String {
-    val eth = BigDecimal(wei).divide(BigDecimal("1000000000000000000"), 4, RoundingMode.HALF_UP)
+    val oneEth = Convert.toWei("1", Convert.Unit.ETHER)
+    val eth = BigDecimal(wei).divide(oneEth, 4, RoundingMode.HALF_UP)
     return eth.stripTrailingZeros().toPlainString()
+}
+
+fun weiToGWeiString(wei: BigInteger): String {
+    val oneGWei = Convert.toWei("1", Convert.Unit.GWEI)
+    val gwei = BigDecimal(wei).divide(oneGWei, 4, RoundingMode.HALF_UP)
+    return gwei.stripTrailingZeros().toPlainString()
+}
+
+@Composable
+@Preview
+private fun ProjectCardPreview() {
+    ProjectCard(
+        project = Project(
+            name = "Jammi Kebabine",
+            description = "As noriu ikurti pacia geriausia pacia kieciausia pacia visu megstamiausia kebabine prasau duokit man labai daug daug pinigu!",
+            headerImageUrl = "https://picsum.photos/600/400",
+            isActive = true,
+            totalFunded = Convert.toWei("2.5", Convert.Unit.ETHER).toBigInteger(),
+            owner = "0x1234567890abcdef1234567890abcdef12345678",
+            currentMilestoneIdx = BigInteger.ONE,
+        ),
+        onClick = {}
+    )
 }
 

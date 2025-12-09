@@ -1,16 +1,13 @@
 package com.arnasmat.dcrowd.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.arnasmat.dcrowd.ui.screens.create.CreateProjectScreen
 import com.arnasmat.dcrowd.ui.screens.detail.ProjectDetailScreen
 import com.arnasmat.dcrowd.ui.screens.projects.ProjectListScreen
 import com.arnasmat.dcrowd.ui.screens.setup.Web3SetupScreen
 import com.arnasmat.dcrowd.ui.screens.user.UserSelectorScreen
 
-/**
- * Resolves destination keys to composable content.
- * This is the core of Navigation 3 - mapping keys to screens.
- */
 @Composable
 fun ResolveDestination(
     destination: AppDestination,

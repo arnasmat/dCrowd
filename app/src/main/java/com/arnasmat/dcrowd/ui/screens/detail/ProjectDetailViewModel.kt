@@ -1,5 +1,6 @@
 package com.arnasmat.dcrowd.ui.screens.detail
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arnasmat.dcrowd.data.repository.CrowdFundingRepository
@@ -14,6 +15,7 @@ import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.math.BigInteger
 import javax.inject.Inject
+import kotlin.toString
 
 @HiltViewModel
 class ProjectDetailViewModel @Inject constructor(
@@ -27,6 +29,7 @@ class ProjectDetailViewModel @Inject constructor(
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
 
     fun loadProject(projectIdx: BigInteger) {
+        Log.i("TEMPTEMP", projectIdx.toString())
         viewModelScope.launch {
             _uiState.value = DetailUiState.Loading
             repository.checkMilestone(projectIdx)

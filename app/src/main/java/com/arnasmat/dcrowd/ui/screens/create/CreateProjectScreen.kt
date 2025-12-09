@@ -20,7 +20,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -31,18 +30,19 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.arnasmat.dcrowd.ui.common.composable.CoilImage
+import com.arnasmat.dcrowd.ui.common.composable.Loader
 import java.math.BigInteger
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -56,25 +56,16 @@ fun CreateProjectScreen(
     onProjectCreated: (BigInteger) -> Unit,
     viewModel: CreateProjectViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val createdProjectIdx by viewModel.createdProjectIdx.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
-    var name by remember { mutableStateOf("") }
-    var imageUrl by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    val milestones = remember {
-        mutableStateListOf(
-            MilestoneInput(
-                "10",
-                System.currentTimeMillis() / 1000 + 86400
-            )
-        )
+    LaunchedEffect(state.createdProjectIdx) {
+        if (state.uiState is CreateProjectUiState.Success) {
+            state.createdProjectIdx?.let { idx ->
+                onProjectCreated(idx)
+            }
+        }
     }
 
-    // Navigate on success
-    if (createdProjectIdx != null && uiState is CreateProjectUiState.Success) {
-        onProjectCreated(createdProjectIdx!!)
-    }
 
     Scaffold(
         topBar = {
@@ -103,23 +94,9 @@ fun CreateProjectScreen(
             )
 
             // Status messages
-            when (val state = uiState) {
+            when (state.uiState) {
                 is CreateProjectUiState.Loading -> {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            CircularProgressIndicator()
-                            Text("Creating project...")
-                        }
-                    }
+                    Loader()
                 }
 
                 is CreateProjectUiState.Success -> {
@@ -130,7 +107,7 @@ fun CreateProjectScreen(
                         )
                     ) {
                         Text(
-                            text = state.message,
+                            text = (state.uiState as CreateProjectUiState.Success).message,
                             modifier = Modifier.padding(16.dp),
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
@@ -145,7 +122,7 @@ fun CreateProjectScreen(
                         )
                     ) {
                         Text(
-                            text = state.message,
+                            text = (state.uiState as CreateProjectUiState.Error).message,
                             modifier = Modifier.padding(16.dp),
                             color = MaterialTheme.colorScheme.onErrorContainer
                         )
@@ -155,35 +132,38 @@ fun CreateProjectScreen(
                 CreateProjectUiState.Editing -> {}
             }
 
-            // Form
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Project Name") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+            GenericInput(
+                value = state.name,
+                onValueChange = { viewModel.updateName(it) },
+                label = "Project Name"
             )
 
-            OutlinedTextField(
-                value = imageUrl,
-                onValueChange = { imageUrl = it },
-                label = { Text("Header Image URL (optional)") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
+            Column {
+                GenericInput(
+                    value = state.imageUrl,
+                    onValueChange = { viewModel.updateImageUrl(it) },
+                    label = "Header Image URL (optional)"
+                )
+                if (!state.imageUrl.isEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    CoilImage(
+                        url = state.imageUrl,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(150.dp)
+                    )
+                }
+            }
 
             OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
+                value = state.description,
+                onValueChange = { viewModel.updateDescription(it) },
                 label = { Text("Description") },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3,
                 maxLines = 5
             )
 
-            Spacer(Modifier.height(8.dp))
-
-            // Milestones
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -196,28 +176,19 @@ fun CreateProjectScreen(
                 )
 
                 IconButton(
-                    onClick = {
-                        milestones.add(
-                            MilestoneInput(
-                                "10",
-                                System.currentTimeMillis() / 1000 + 86400
-                            )
-                        )
-                    }
+                    onClick = { viewModel.addNewMilestone() }
                 ) {
                     Icon(Icons.Default.Add, "Add Milestone")
                 }
             }
 
-            milestones.forEachIndexed { index, milestone ->
+            state.milestones.forEachIndexed { index, milestone ->
                 MilestoneCard(
                     milestone = milestone,
-                    onGoalChange = { milestones[index] = milestone.copy(goalAmountEth = it) },
-                    onDeadlineChange = {
-                        milestones[index] = milestone.copy(deadlineTimestamp = it)
-                    },
-                    onDelete = if (milestones.size > 1) {
-                        { milestones.removeAt(index) }
+                    onGoalChange = { viewModel.updateMilestoneGoal(index, it) },
+                    onDeadlineChange = { viewModel.updateMilestoneDeadline(index, it) },
+                    onDelete = if (state.milestones.size > 1) {
+                        { viewModel.removeMilestone(index) }
                     } else null
                 )
             }
@@ -226,15 +197,26 @@ fun CreateProjectScreen(
 
             Button(
                 onClick = {
-                    viewModel.createProject(name, imageUrl, description, milestones)
+                    viewModel.createProject()
                 },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = uiState !is CreateProjectUiState.Loading
+                enabled = state.uiState !is CreateProjectUiState.Loading
             ) {
                 Text("Create Project")
             }
         }
     }
+}
+
+@Composable
+private fun GenericInput(value: String, onValueChange: (String) -> Unit, label: String) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(text = label) },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true
+    )
 }
 
 @Composable
