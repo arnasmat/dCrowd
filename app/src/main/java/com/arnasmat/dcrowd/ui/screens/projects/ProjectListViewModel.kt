@@ -58,10 +58,6 @@ class ProjectListViewModel @Inject constructor(
         }
     }
 
-    fun onRefresh() {
-        loadProjects()
-    }
-
     fun loadProjects() {
         viewModelScope.launch {
             _state.newUiState(UiState.Loading)
@@ -119,7 +115,6 @@ sealed class UiState {
 
 data class ProjectListState(
     val isConnected: Boolean = false,
-    val isRefreshing: Boolean = false,
     val projects: List<ProjectWithIndex> = emptyList(),
     val uiState: UiState = UiState.Initial
 )

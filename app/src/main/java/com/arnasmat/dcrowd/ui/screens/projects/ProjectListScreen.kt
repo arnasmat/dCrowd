@@ -78,32 +78,33 @@ fun ProjectListScreen(
         }
     ) { padding ->
         PullToRefreshBox(
-            isRefreshing = state.value.isRefreshing,
+            isRefreshing = state.value.uiState is UiState.Loading,
             onRefresh = viewModel::loadProjects,
-            modifier = Modifier.padding(padding).padding(16.dp)
+            modifier = Modifier
+                .padding(padding)
+                .padding(16.dp)
         ) {
-            // TODO: fix refreshing here lol
-            when (state.value.uiState) {
-                is UiState.Loading -> {
-                    Loader()
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item {
+                    // terrible fix for this shit but idfc lmaoo
+                    when (state.value.uiState) {
+                        is UiState.Error -> { ErrorCard(errorMessage = state.value.uiState as UiState.Error)}
+                        else -> {}
+                    }
                 }
 
-                is UiState.Error -> {
-                    ErrorCard(errorMessage = state.value.uiState as UiState.Error)
+                item {
+                    if (!state.value.isConnected) {
+                        NotConnectedCard()
+                    } else if (state.value.projects.isEmpty() && state.value.uiState !is UiState.Loading) {
+                        EmptyProjectCard()
+                    }
                 }
 
-                else -> {}
-            }
-
-            if (!state.value.isConnected) {
-                NotConnectedCard()
-            } else if (state.value.projects.isEmpty() && state.value.uiState !is UiState.Loading) {
-                EmptyProjectCard()
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                if(state.value.projects.isNotEmpty()) {
                     items(
                         items = state.value.projects,
                         key = { it.index }
@@ -193,7 +194,7 @@ fun ProjectCard(
             .clickable(onClick = onClick),
     ) {
         Column {
-            if(!project.headerImageUrl.isEmpty()) {
+            if (!project.headerImageUrl.isEmpty()) {
                 CoilImage(
                     url = project.headerImageUrl,
                     modifier = Modifier

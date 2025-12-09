@@ -45,6 +45,7 @@ fun DCrowdApp() {
 
     NavDisplay(
         backStack = backStack,
+        // fuck this stupid fucking bug this caused me so much issues lmao. all it took was adding this
         entryDecorators = listOf(
             // Add the default decorators for managing scenes and saving state
             rememberSaveableStateHolderNavEntryDecorator(),
