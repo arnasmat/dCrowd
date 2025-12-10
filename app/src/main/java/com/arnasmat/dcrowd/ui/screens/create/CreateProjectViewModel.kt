@@ -56,10 +56,6 @@ class CreateProjectViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            if (repository.isCurrentUserSystemOwner()) {
-                _state.newUiState(CreateProjectUiState.Error("System owner cannot create projects! Switch to a different user."))
-                return@launch
-            }
 
             _state.newUiState(CreateProjectUiState.Loading)
 

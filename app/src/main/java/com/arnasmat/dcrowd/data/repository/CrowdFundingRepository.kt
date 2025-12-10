@@ -1,11 +1,12 @@
 package com.arnasmat.dcrowd.data.repository
 
 import com.arnasmat.dcrowd.data.web3.CrowdSourcingWrapper
-import com.arnasmat.dcrowd.data.web3.GanacheAccounts
-import com.arnasmat.dcrowd.data.web3.GanacheUser
 import com.arnasmat.dcrowd.data.web3.Milestone
 import com.arnasmat.dcrowd.data.web3.Project
+import com.arnasmat.dcrowd.data.web3.UserCredentials
 import com.arnasmat.dcrowd.data.web3.UserManager
+import com.arnasmat.dcrowd.data.web3.Web3Config
+import com.arnasmat.dcrowd.data.web3.Web3ConfigManager
 import com.arnasmat.dcrowd.data.web3.Web3Result
 import kotlinx.coroutines.flow.Flow
 import org.web3j.protocol.core.methods.response.TransactionReceipt
@@ -18,36 +19,40 @@ import javax.inject.Singleton
 @Singleton
 class CrowdFundingRepository @Inject constructor(
     private val crowdSourcingWrapper: CrowdSourcingWrapper,
-    private val userManager: UserManager
+    private val userManager: UserManager,
+    private val web3ConfigManager: Web3ConfigManager
 ) {
 
-    val currentUserFlow: Flow<GanacheUser?> = userManager.currentUserFlow
+    val currentUserFlow: Flow<UserCredentials?> = userManager.currentUserFlow
+    val web3ConfigFlow: Flow<Web3Config?> = web3ConfigManager.configFlow
 
-    suspend fun initializeAddress(contractAddress: String): Web3Result<Unit> {
-        return crowdSourcingWrapper.initializeConnection(contractAddress)
+    suspend fun initializeConnection(rpcUrl: String, contractAddress: String): Web3Result<Unit> {
+        return crowdSourcingWrapper.initializeConnection(rpcUrl, contractAddress)
     }
 
-    // NOTE: Contracts are deployed via Truffle (truffle migrate --reset).
-    // Get the deployed contract address and pass it to initialize().
-
-    fun getAvailableUsers(excludeSystemOwner: Boolean = false): List<GanacheUser> {
-        return userManager.getAvailableUsers(excludeSystemOwner)
+    suspend fun loginUser(address: String, privateKey: String, name: String = ""): Web3Result<Unit> {
+        return try {
+            userManager.loginUser(address, privateKey, name)
+            Web3Result.Success(Unit)
+        } catch (e: Exception) {
+            Web3Result.Error(e.message ?: "Failed to login", e)
+        }
     }
 
-    suspend fun switchUser(user: GanacheUser) {
-        userManager.switchUser(user)
-    }
-
-    suspend fun getCurrentUser(): GanacheUser? {
+    suspend fun getCurrentUser(): UserCredentials? {
         return userManager.getCurrentUser()
     }
 
-    suspend fun isCurrentUserSystemOwner(): Boolean {
-        return userManager.isCurrentUserSystemOwner()
+    suspend fun logoutUser() {
+        userManager.clearCurrentUser()
     }
 
-    suspend fun initializeDefaultUser() {
-        userManager.initializeDefaultUser()
+    suspend fun getWeb3Config(): Web3Config? {
+        return web3ConfigManager.getConfig()
+    }
+
+    suspend fun saveWeb3Config(config: Web3Config) {
+        web3ConfigManager.saveConfig(config)
     }
 
     suspend fun createProject(
@@ -144,10 +149,6 @@ class CrowdFundingRepository @Inject constructor(
 
     fun ethToWei(eth: BigDecimal): BigInteger {
         return Convert.toWei(eth, Convert.Unit.ETHER).toBigInteger()
-    }
-
-    fun getSystemOwnerInfo(): GanacheUser {
-        return GanacheAccounts.SYSTEM_OWNER
     }
 }
 

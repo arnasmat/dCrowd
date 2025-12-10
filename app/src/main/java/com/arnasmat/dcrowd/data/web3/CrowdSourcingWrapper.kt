@@ -3,7 +3,6 @@ package com.arnasmat.dcrowd.data.web3
 import com.arnasmat.dcrowd.data.sol.CrowdSourcing
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.web3j.crypto.Credentials
 import org.web3j.protocol.Web3j
 import org.web3j.protocol.core.DefaultBlockParameterName
 import org.web3j.protocol.core.methods.response.TransactionReceipt
@@ -20,23 +19,26 @@ sealed class Web3Result<out T> {
 @Singleton
 class CrowdSourcingWrapper @Inject constructor(
     private val web3Factory: Web3Factory,
-    private val userManager: UserManager
+    private val userManager: UserManager,
+    private val web3ConfigManager: Web3ConfigManager
 ) {
 
     private var web3j: Web3j? = null
-    private var contract: CrowdSourcing? = null
-    private var contractAddress: String? = null
 
-    suspend fun initializeConnection(contractAddress: String) = withContext(Dispatchers.IO) {
+    suspend fun initializeConnection(rpcUrl: String, contractAddress: String) = withContext(Dispatchers.IO) {
         try {
-            this@CrowdSourcingWrapper.contractAddress = contractAddress
-            web3j = web3Factory.createWeb3j()
+            web3j = web3Factory.createWeb3j(rpcUrl)
 
-            // Verify connection
             val version = web3j?.web3ClientVersion()?.send()
             if (version?.hasError() == true) {
-                throw Exception("Failed to connect to Ganache: ${version.error.message}")
+                throw Exception("Failed to connect to network: ${version.error.message}")
             }
+
+            val config = Web3Config(
+                rpcUrl = rpcUrl,
+                contractAddress = contractAddress
+            )
+            web3ConfigManager.saveConfig(config)
 
             Web3Result.Success(Unit)
         } catch (e: Exception) {
@@ -46,31 +48,26 @@ class CrowdSourcingWrapper @Inject constructor(
 
     private suspend fun getContract(): CrowdSourcing {
         val currentUser = userManager.getCurrentUser()
-            ?: throw IllegalStateException("No user selected. Please select a user first.")
+            ?: throw IllegalStateException("No user logged in. Please login first.")
+
+        val config = web3ConfigManager.getConfig()
+            ?: throw IllegalStateException("Web3 not configured. Please configure in settings.")
+
+        if (web3j == null) {
+            web3j = web3Factory.createWeb3j(config.rpcUrl)
+        }
 
         val credentials = web3Factory.createCredentials(currentUser)
         val gasProvider = web3Factory.getGasProvider()
 
         return CrowdSourcing.load(
-            contractAddress ?: throw IllegalStateException("Contract not initialized"),
+            config.contractAddress,
             web3j ?: throw IllegalStateException("Web3j not initialized"),
             credentials,
             gasProvider
         )
     }
 
-    private fun getContractWithCredentials(credentials: Credentials): CrowdSourcing {
-        val gasProvider = web3Factory.getGasProvider()
-        return CrowdSourcing.load(
-            contractAddress ?: throw IllegalStateException("Contract not initialized"),
-            web3j ?: throw IllegalStateException("Web3j not initialized"),
-            credentials,
-            gasProvider
-        )
-    }
-
-    // NOTE: Contracts are deployed via Truffle (truffle migrate --reset), not from the app.
-    // The contract address from Truffle deployment should be passed to initialize().
 
     suspend fun getSysOwner(): Web3Result<String> = withContext(Dispatchers.IO) {
         try {
@@ -89,9 +86,6 @@ class CrowdSourcingWrapper @Inject constructor(
         milestones: List<Milestone>
     ): Web3Result<TransactionReceipt> = withContext(Dispatchers.IO) {
         try {
-            if (userManager.isCurrentUserSystemOwner()) {
-                return@withContext Web3Result.Error("System owner cannot create projects")
-            }
 
             val contract = getContract()
             val milestoneInfoList = milestones.map {

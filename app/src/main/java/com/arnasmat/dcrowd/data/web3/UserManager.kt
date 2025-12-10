@@ -25,13 +25,13 @@ class UserManager @Inject constructor(
         val CURRENT_USER_NAME = stringPreferencesKey("current_user_name")
     }
 
-    val currentUserFlow: Flow<GanacheUser?> = context.dataStore.data.map { preferences ->
+    val currentUserFlow: Flow<UserCredentials?> = context.dataStore.data.map { preferences ->
         val address = preferences[PreferenceKeys.CURRENT_USER_ADDRESS]
         val privateKey = preferences[PreferenceKeys.CURRENT_USER_PRIVATE_KEY]
         val name = preferences[PreferenceKeys.CURRENT_USER_NAME]
 
         if (address != null && privateKey != null) {
-            GanacheUser(
+            UserCredentials(
                 address = address,
                 privateKey = privateKey,
                 name = name ?: ""
@@ -41,21 +41,23 @@ class UserManager @Inject constructor(
         }
     }
 
-    suspend fun getCurrentUser(): GanacheUser? {
+    suspend fun getCurrentUser(): UserCredentials? {
         return currentUserFlow.first()
     }
 
-    suspend fun switchUser(user: GanacheUser) {
-        context.dataStore.edit { preferences ->
-            preferences[PreferenceKeys.CURRENT_USER_ADDRESS] = user.address
-            preferences[PreferenceKeys.CURRENT_USER_PRIVATE_KEY] = user.privateKey
-            preferences[PreferenceKeys.CURRENT_USER_NAME] = user.name
+    suspend fun loginUser(address: String, privateKey: String, name: String = "") {
+        if (!isValidAddress(address)) {
+            throw IllegalArgumentException("Invalid Ethereum address format")
         }
-    }
+        if (!isValidPrivateKey(privateKey)) {
+            throw IllegalArgumentException("Invalid private key format")
+        }
 
-    suspend fun isCurrentUserSystemOwner(): Boolean {
-        val currentUser = getCurrentUser() ?: return false
-        return currentUser.address.equals(GanacheAccounts.SYSTEM_OWNER.address, ignoreCase = true)
+        context.dataStore.edit { preferences ->
+            preferences[PreferenceKeys.CURRENT_USER_ADDRESS] = address
+            preferences[PreferenceKeys.CURRENT_USER_PRIVATE_KEY] = privateKey
+            preferences[PreferenceKeys.CURRENT_USER_NAME] = name
+        }
     }
 
     suspend fun clearCurrentUser() {
@@ -66,20 +68,17 @@ class UserManager @Inject constructor(
         }
     }
 
-    fun getAvailableUsers(excludeSystemOwner: Boolean = false): List<GanacheUser> {
-        return if (excludeSystemOwner) {
-            GanacheAccounts.DEFAULT_ACCOUNTS.filter {
-                !it.address.equals(GanacheAccounts.SYSTEM_OWNER.address, ignoreCase = true)
-            }
-        } else {
-            GanacheAccounts.DEFAULT_ACCOUNTS
-        }
+    private fun isValidAddress(address: String): Boolean {
+        return address.matches(Regex("^0x[0-9a-fA-F]{40}$"))
     }
 
-    suspend fun initializeDefaultUser() {
-        if (getCurrentUser() == null) {
-            switchUser(GanacheAccounts.INIT_USER)
+    private fun isValidPrivateKey(privateKey: String): Boolean {
+        val cleanKey = if (privateKey.startsWith("0x")) {
+            privateKey.substring(2)
+        } else {
+            privateKey
         }
+        return cleanKey.matches(Regex("^[0-9a-fA-F]{64}$"))
     }
 }
 

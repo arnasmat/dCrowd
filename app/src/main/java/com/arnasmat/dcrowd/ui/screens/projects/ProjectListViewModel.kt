@@ -3,38 +3,45 @@ package com.arnasmat.dcrowd.ui.screens.projects
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arnasmat.dcrowd.data.repository.CrowdFundingRepository
-import com.arnasmat.dcrowd.data.web3.GanacheUser
 import com.arnasmat.dcrowd.data.web3.Project
 import com.arnasmat.dcrowd.data.web3.Web3Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.serialization.builtins.UIntArraySerializer
 import java.math.BigInteger
 import javax.inject.Inject
 
 @HiltViewModel
 class ProjectListViewModel @Inject constructor(
-    private val repository: CrowdFundingRepository,
-    private val ganacheConfig: com.arnasmat.dcrowd.data.web3.GanacheConfig
+    private val repository: CrowdFundingRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProjectListState())
     val state = _state.asStateFlow()
 
     init {
-        connectToContract(ganacheConfig.contractAddress)
+        observeConfiguration()
     }
 
-    fun connectToContract(contractAddress: String) {
+    private fun observeConfiguration() {
+        viewModelScope.launch {
+            repository.web3ConfigFlow.collect { config ->
+                if (config != null) {
+                    _state.update { it.copy(isConnected = true) }
+                    loadProjects()
+                } else {
+                    _state.update { it.copy(isConnected = false) }
+                }
+            }
+        }
+    }
+
+    fun connectToContract(rpcUrl: String, contractAddress: String) {
         viewModelScope.launch {
             _state.newUiState(UiState.Loading)
 
-            when (val result = repository.initializeAddress(contractAddress)) {
+            when (val result = repository.initializeConnection(rpcUrl, contractAddress)) {
                 is Web3Result.Success -> {
                     _state.update { it.copy(
                         isConnected = true,

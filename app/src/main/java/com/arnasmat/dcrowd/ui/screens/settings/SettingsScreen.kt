@@ -1,9 +1,6 @@
 package com.arnasmat.dcrowd.ui.screens.settings
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,10 +9,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -24,12 +23,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,10 +36,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.arnasmat.dcrowd.data.web3.GanacheUser
 import java.math.RoundingMode
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,7 +52,6 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
-    var showUserSelector by remember { mutableStateOf(false) }
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     Scaffold(
@@ -66,79 +66,72 @@ fun SettingsScreen(
             )
         }
     ) { padding ->
-        Column(
+        LazyColumn(
             modifier = modifier
                 .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                )
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "Contract Address",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = state.contractAddress ?: "Not connected",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontFamily = FontFamily.Monospace
-                    )
+            item {
+                when (state.uiState) {
+                    is SettingsUiState.Loading -> {
+                        StatusCard(
+                            message = "Processing...",
+                            isLoading = true,
+                            isError = false,
+                            onDismiss = null
+                        )
+                    }
+                    is SettingsUiState.Success -> {
+                        StatusCard(
+                            message = (state.uiState as SettingsUiState.Success).message,
+                            isLoading = false,
+                            isError = false,
+                            onDismiss = { viewModel.clearMessage() }
+                        )
+                    }
+                    is SettingsUiState.Error -> {
+                        StatusCard(
+                            message = (state.uiState as SettingsUiState.Error).message,
+                            isLoading = false,
+                            isError = true,
+                            onDismiss = { viewModel.clearMessage() }
+                        )
+                    }
+                    SettingsUiState.Initial -> {}
                 }
             }
 
-            when (state.uiState) {
-                is SettingsUiState.Loading -> {
-                    StatusCard(
-                        message = "",
-                        isLoading = true,
-                        isError = false
-                    )
-                }
-                is SettingsUiState.Success -> {
-                    StatusCard(
-                        message = (state.uiState as SettingsUiState.Success).message,
-                        isLoading = false,
-                        isError = false
-                    )
-                }
-                is SettingsUiState.Error -> {
-                    StatusCard(
-                        message = (state.uiState as SettingsUiState.Error).message,
-                        isLoading = false,
-                        isError = true
-                    )
-                }
-                SettingsUiState.Initial -> {
-                }
+            item {
+                Web3ConfigSection(
+                    rpcUrl = state.rpcUrl,
+                    contractAddress = state.contractAddress,
+                    onRpcUrlChange = viewModel::updateRpcUrl,
+                    onContractAddressChange = viewModel::updateContractAddress,
+                    onSave = viewModel::saveConfiguration
+                )
             }
 
-            CurrentUserCard(
-                user = state.currentUser,
-                balance = state.userBalance,
-                onSwitchUser = { showUserSelector = true },
-                onRefreshBalance = { viewModel.refreshUserBalance() }
-            )
-
-            if (showUserSelector) {
-                UserSelector(
-                    currentUser = state.currentUser,
-                    availableUsers = viewModel.getAvailableUsers(),
-                    onUserSelected = { user ->
-                        viewModel.switchUser(user)
-                        showUserSelector = false
-                    },
-                    onDismiss = { showUserSelector = false }
-                )
+            item {
+                if (state.currentUser != null) {
+                    CurrentUserCard(
+                        user = state.currentUser,
+                        balance = state.userBalance,
+                        onLogout = viewModel::logoutUser,
+                        onRefreshBalance = viewModel::refreshUserBalance
+                    )
+                } else {
+                    LoginSection(
+                        address = state.userAddress,
+                        privateKey = state.userPrivateKey,
+                        name = state.userName,
+                        onAddressChange = viewModel::updateUserAddress,
+                        onPrivateKeyChange = viewModel::updateUserPrivateKey,
+                        onNameChange = viewModel::updateUserName,
+                        onLogin = viewModel::loginUser
+                    )
+                }
             }
         }
     }
@@ -146,9 +139,9 @@ fun SettingsScreen(
 
 @Composable
 fun CurrentUserCard(
-    user: GanacheUser?,
+    user: com.arnasmat.dcrowd.data.web3.UserCredentials?,
     balance: java.math.BigDecimal?,
-    onSwitchUser: () -> Unit,
+    onLogout: () -> Unit,
     onRefreshBalance: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -173,20 +166,20 @@ fun CurrentUserCard(
                     fontWeight = FontWeight.Medium
                 )
 
-                OutlinedButton(onClick = onSwitchUser) {
-                    Text("Switch User")
+                OutlinedButton(onClick = onLogout) {
+                    Text("Logout")
                 }
             }
 
             if (user != null) {
-                // User name
-                Text(
-                    text = user.name.ifBlank { "User" },
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
-                )
+                if (user.name.isNotBlank()) {
+                    Text(
+                        text = user.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
 
-                // Address
                 Text(
                     text = user.address,
                     style = MaterialTheme.typography.bodySmall,
@@ -194,7 +187,6 @@ fun CurrentUserCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                // Balance
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -213,12 +205,6 @@ fun CurrentUserCard(
                         Text("Refresh", style = MaterialTheme.typography.labelSmall)
                     }
                 }
-            } else {
-                Text(
-                    text = "No user selected",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error
-                )
             }
         }
     }
@@ -229,6 +215,7 @@ fun StatusCard(
     message: String,
     isLoading: Boolean,
     isError: Boolean,
+    onDismiss: (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -253,113 +240,184 @@ fun StatusCard(
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f),
                 color = when {
                     isError -> MaterialTheme.colorScheme.onErrorContainer
                     isLoading -> MaterialTheme.colorScheme.onSecondaryContainer
                     else -> MaterialTheme.colorScheme.onPrimaryContainer
                 }
             )
+
+            if (onDismiss != null && !isLoading) {
+                IconButton(onClick = onDismiss) {
+                    Text("✕")
+                }
+            }
         }
     }
 }
 
 @Composable
-fun UserSelector(
-    currentUser: GanacheUser?,
-    availableUsers: List<GanacheUser>,
-    onUserSelected: (GanacheUser) -> Unit,
-    onDismiss: () -> Unit,
+fun Web3ConfigSection(
+    rpcUrl: String,
+    contractAddress: String,
+    onRpcUrlChange: (String) -> Unit,
+    onContractAddressChange: (String) -> Unit,
+    onSave: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        )
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(
+            Text(
+                text = "Web3 Configuration",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            OutlinedTextField(
+                value = rpcUrl,
+                onValueChange = onRpcUrlChange,
+                label = { Text("RPC URL") },
+                placeholder = { Text("http://10.0.2.2:8545") },
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Select User",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Uri,
+                    imeAction = ImeAction.Next
                 )
+            )
 
-                OutlinedButton(onClick = onDismiss) {
-                    Text("Cancel")
-                }
-            }
+            OutlinedTextField(
+                value = contractAddress,
+                onValueChange = onContractAddressChange,
+                label = { Text("Contract Address") },
+                placeholder = { Text("0x...") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Done
+                )
+            )
 
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            Button(
+                onClick = onSave,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                items(availableUsers) { user ->
-                    UserItem(
-                        user = user,
-                        isSelected = user.address == currentUser?.address,
-                        onClick = { onUserSelected(user) }
-                    )
-                }
+                Text("Save Configuration")
             }
         }
     }
 }
 
 @Composable
-fun UserItem(
-    user: GanacheUser,
-    isSelected: Boolean,
-    onClick: () -> Unit,
+fun LoginSection(
+    address: String,
+    privateKey: String,
+    name: String,
+    onAddressChange: (String) -> Unit,
+    onPrivateKeyChange: (String) -> Unit,
+    onNameChange: (String) -> Unit,
+    onLogin: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        color = if (isSelected) {
-            MaterialTheme.colorScheme.primaryContainer
-        } else {
-            MaterialTheme.colorScheme.surface
-        },
-        tonalElevation = if (isSelected) 2.dp else 0.dp,
-        shape = MaterialTheme.shapes.medium
+    var privateKeyVisible by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+        )
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Selection indicator
-            Box(
-                modifier = Modifier
-                    .size(12.dp)
-                    .background(
-                        color = if (isSelected) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.outline
-                        },
-                        shape = CircleShape
-                    )
+            Text(
+                text = "Login",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
             )
 
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = user.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+            Text(
+                text = "Enter your wallet credentials to login",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+
+            OutlinedTextField(
+                value = address,
+                onValueChange = onAddressChange,
+                label = { Text("Wallet Address") },
+                placeholder = { Text("0x...") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
                 )
-                Text(
-                    text = "${user.address.take(10)}...${user.address.takeLast(6)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            OutlinedTextField(
+                value = privateKey,
+                onValueChange = onPrivateKeyChange,
+                label = { Text("Private Key") },
+                placeholder = { Text("0x... or without 0x prefix") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                visualTransformation = if (privateKeyVisible) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
+                },
+                trailingIcon = {
+                    IconButton(onClick = { privateKeyVisible = !privateKeyVisible }) {
+                        Icon(
+                            imageVector = if (privateKeyVisible) {
+                                Icons.Filled.Visibility
+                            } else {
+                                Icons.Filled.VisibilityOff
+                            },
+                            contentDescription = if (privateKeyVisible) {
+                                "Hide private key"
+                            } else {
+                                "Show private key"
+                            }
+                        )
+                    }
+                },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
                 )
+            )
+
+            OutlinedTextField(
+                value = name,
+                onValueChange = onNameChange,
+                label = { Text("Name (Optional)") },
+                placeholder = { Text("My Wallet") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Done
+                )
+            )
+
+            Button(
+                onClick = onLogin,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Login")
             }
         }
     }
