@@ -67,8 +67,7 @@ class CreateProjectViewModel @Inject constructor(
             )) {
                 is Web3Result.Success -> {
                     val events = CrowdSourcing.getProjectCreatedEvents(result.data)
-                    val projectIdx = events.firstOrNull()?.projectIdx?.subtract(BigInteger.ONE)
-                    // TODO: remove this when backend returns correct idx, not len
+                    val projectIdx = events.firstOrNull()?.projectIndex
 
                     Log.i("TEMPTEMP", projectIdx.toString())
                     _state.update { it.copy(

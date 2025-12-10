@@ -129,17 +129,6 @@ class CrowdSourcingWrapper @Inject constructor(
             }
         }
 
-    suspend fun checkMilestone(projectIdx: BigInteger): Web3Result<TransactionReceipt> =
-        withContext(Dispatchers.IO) {
-            try {
-                val contract = getContract()
-                val receipt = contract.checkMilestone(projectIdx).send()
-                Web3Result.Success(receipt)
-            } catch (e: Exception) {
-                Web3Result.Error("Failed to check milestone: ${e.message}", e)
-            }
-        }
-
     suspend fun stopProject(projectIdx: BigInteger): Web3Result<TransactionReceipt> =
         withContext(Dispatchers.IO) {
             try {
@@ -157,6 +146,25 @@ class CrowdSourcingWrapper @Inject constructor(
                 val contract = getContract()
                 val result = contract.projects(projectIdx).send()
 
+                // Fetch milestone information for the current milestone
+                var currentMilestoneGoal: BigInteger? = null
+                var currentMilestoneDeadline: BigInteger? = null
+
+                try {
+                    val milestones = contract.getallMilestonesInfo(projectIdx).send()
+                    val currentIdx = result.component6().toInt() // currentMilestoneIdx
+
+                    if (milestones.isNotEmpty() && currentIdx < milestones.size) {
+                        val currentMilestone = milestones[currentIdx]
+                        if (currentMilestone is CrowdSourcing.MilestoneInfo) {
+                            currentMilestoneGoal = currentMilestone.goalAmount
+                            currentMilestoneDeadline = currentMilestone.deadline
+                        }
+                    }
+                } catch (_: Exception) {
+                    // If we can't fetch milestone info, continue without it
+                }
+
                 val project = Project(
                     owner = result.component1(),
                     name = result.component2(),
@@ -164,12 +172,78 @@ class CrowdSourcingWrapper @Inject constructor(
                     description = result.component4(),
                     totalFunded = result.component5(),
                     currentMilestoneIdx = result.component6(),
-                    isActive = result.component7()
+                    isActive = result.component7(),
+                    currentMilestoneGoal = currentMilestoneGoal,
+                    currentMilestoneDeadline = currentMilestoneDeadline
                 )
 
                 Web3Result.Success(project)
             } catch (e: Exception) {
                 Web3Result.Error("Failed to get project: ${e.message}", e)
+            }
+        }
+
+    suspend fun getProjectInfo(projectIdx: BigInteger): Web3Result<TransactionReceipt> = withContext(
+        Dispatchers.IO) {
+        try {
+            val contract = getContract()
+            val result = contract.getProjectInfo(projectIdx).send()
+            Web3Result.Success(result)
+        } catch (e: Exception) {
+            Web3Result.Error("Failed to get project info: ${e.message}", e)
+        }
+    }
+
+    suspend fun getAllActiveProjects(): Web3Result<List<ProjectWithIndex>> =
+        withContext(Dispatchers.IO) {
+            try {
+                val contract = getContract()
+                val result = contract.getAllActiveProjects().send()
+
+                val projects = result.mapNotNull { projectView ->
+                    if (projectView is CrowdSourcing.ProjectView) {
+                        // Fetch milestone information for the current milestone
+                        var currentMilestoneGoal: BigInteger? = null
+                        var currentMilestoneDeadline: BigInteger? = null
+
+                        try {
+                            val milestones = contract.getallMilestonesInfo(projectView.index).send()
+                            val currentIdx = projectView.currentMilestoneIndex.toInt()
+
+                            if (milestones.isNotEmpty() && currentIdx < milestones.size) {
+                                val currentMilestone = milestones[currentIdx]
+                                if (currentMilestone is CrowdSourcing.MilestoneInfo) {
+                                    currentMilestoneGoal = currentMilestone.goalAmount
+                                    currentMilestoneDeadline = currentMilestone.deadline
+                                }
+                            }
+                        } catch (_: Exception) {
+                            // If we can't fetch milestone info, continue without it
+                            // Log the error but don't fail the entire request
+                        }
+
+                        ProjectWithIndex(
+                            index = projectView.index,
+                            project = Project(
+                                owner = projectView.creator,
+                                name = projectView.name,
+                                headerImageUrl = projectView.headerImageUrl,
+                                description = projectView.description,
+                                totalFunded = projectView.totalFunded,
+                                currentMilestoneIdx = projectView.currentMilestoneIndex,
+                                isActive = projectView.isActive,
+                                currentMilestoneGoal = currentMilestoneGoal,
+                                currentMilestoneDeadline = currentMilestoneDeadline
+                            )
+                        )
+                    } else {
+                        null
+                    }
+                }
+
+                Web3Result.Success(projects)
+            } catch (e: Exception) {
+                Web3Result.Error("Failed to get all active projects: ${e.message}", e)
             }
         }
 
@@ -225,6 +299,13 @@ data class Project(
     val description: String,
     val totalFunded: BigInteger,
     val currentMilestoneIdx: BigInteger,
-    val isActive: Boolean
+    val isActive: Boolean,
+    val currentMilestoneGoal: BigInteger? = null,
+    val currentMilestoneDeadline: BigInteger? = null
+)
+
+data class ProjectWithIndex(
+    val index: BigInteger,
+    val project: Project
 )
 

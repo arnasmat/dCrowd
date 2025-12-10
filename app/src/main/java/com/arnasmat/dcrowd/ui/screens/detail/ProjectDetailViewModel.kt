@@ -32,7 +32,6 @@ class ProjectDetailViewModel @Inject constructor(
         Log.i("TEMPTEMP", projectIdx.toString())
         viewModelScope.launch {
             _uiState.value = DetailUiState.Loading
-            repository.checkMilestone(projectIdx)
 
             when (val result = repository.getProject(projectIdx)) {
                 is Web3Result.Success -> {

@@ -104,16 +104,17 @@ class CrowdFundingRepository @Inject constructor(
         return crowdSourcingWrapper.checkCurrentMilestone(projectIdx)
     }
 
-    suspend fun checkMilestone(projectIdx: BigInteger): Web3Result<TransactionReceipt> {
-        return crowdSourcingWrapper.checkMilestone(projectIdx)
-    }
-
     suspend fun stopProject(projectIdx: BigInteger): Web3Result<TransactionReceipt> {
         return crowdSourcingWrapper.stopProject(projectIdx)
     }
 
     suspend fun getProject(projectIdx: BigInteger): Web3Result<Project> {
         return crowdSourcingWrapper.getProject(projectIdx)
+    }
+
+
+    suspend fun getAllActiveProjects(): Web3Result<List<com.arnasmat.dcrowd.data.web3.ProjectWithIndex>> {
+        return crowdSourcingWrapper.getAllActiveProjects()
     }
 
     suspend fun getSysOwner(): Web3Result<String> {

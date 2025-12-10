@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -38,7 +37,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arnasmat.dcrowd.data.web3.Project
 import com.arnasmat.dcrowd.ui.common.composable.CoilImage
-import com.arnasmat.dcrowd.ui.common.composable.Loader
 import org.web3j.utils.Convert
 import java.math.BigDecimal
 import java.math.BigInteger
@@ -238,10 +236,14 @@ fun ProjectCard(
                         FundedElement(project.totalFunded)
                     }
 
-                    Column(horizontalAlignment = Alignment.End) {
-                        // TODO: Use getter to get milestone goal and deadline and show it
-                        // todo: remake the scren and all the todo's in chat w/ justin
-                        MilestoneElement(BigInteger.ONE, "2024-12-31")
+                    // Display current milestone info if available
+                    if (project.currentMilestoneGoal != null && project.currentMilestoneDeadline != null) {
+                        Column(horizontalAlignment = Alignment.End) {
+                            MilestoneElement(
+                                currentMilestoneGoal = project.currentMilestoneGoal,
+                                currentMilestoneDeadline = project.currentMilestoneDeadline
+                            )
+                        }
                     }
                 }
             }
@@ -297,7 +299,7 @@ private fun FundedElement(
 @Composable
 private fun MilestoneElement(
     currentMilestoneGoal: BigInteger,
-    currentMilestoneDeadline: String,
+    currentMilestoneDeadline: BigInteger,
 ) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -309,7 +311,7 @@ private fun MilestoneElement(
         )
         MilestoneSingular(
             labelText = "Deadline",
-            text = currentMilestoneDeadline
+            text = formatDeadlineTimestamp(currentMilestoneDeadline)
         )
     }
 
@@ -345,6 +347,16 @@ fun weiToGWeiString(wei: BigInteger): String {
     val oneGWei = Convert.toWei("1", Convert.Unit.GWEI)
     val gwei = BigDecimal(wei).divide(oneGWei, 4, RoundingMode.HALF_UP)
     return gwei.stripTrailingZeros().toPlainString()
+}
+
+fun formatDeadlineTimestamp(timestamp: BigInteger): String {
+    return try {
+        val dateFormat = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault())
+        val date = java.util.Date(timestamp.toLong() * 1000) // Convert seconds to milliseconds
+        dateFormat.format(date)
+    } catch (e: Exception) {
+        "N/A"
+    }
 }
 
 @Composable
