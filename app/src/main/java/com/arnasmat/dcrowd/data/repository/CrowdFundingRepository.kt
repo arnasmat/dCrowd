@@ -77,17 +77,6 @@ class CrowdFundingRepository @Inject constructor(
         )
     }
 
-    suspend fun fundProjectInEth(
-        projectIdx: BigInteger,
-        amountInEth: BigDecimal
-    ): Web3Result<TransactionReceipt> {
-        if (amountInEth <= BigDecimal.ZERO) {
-            return Web3Result.Error("Funding amount must be greater than 0")
-        }
-
-        val amountInWei = ethToWei(amountInEth)
-        return crowdSourcingWrapper.fundProject(projectIdx, amountInWei)
-    }
 
     suspend fun fundProject(
         projectIdx: BigInteger,

@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arnasmat.dcrowd.data.repository.CrowdFundingRepository
-import com.arnasmat.dcrowd.data.sol.CrowdSourcing
 import com.arnasmat.dcrowd.data.web3.Project
 import com.arnasmat.dcrowd.data.web3.Web3Result
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,7 +14,11 @@ import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.math.BigInteger
 import javax.inject.Inject
-import kotlin.toString
+import org.web3j.utils.Convert
+
+enum class FundingUnit {
+    ETH, GWEI, WEI
+}
 
 @HiltViewModel
 class ProjectDetailViewModel @Inject constructor(
@@ -46,12 +49,12 @@ class ProjectDetailViewModel @Inject constructor(
         }
     }
 
-    fun fundProject(projectIdx: BigInteger, amountEth: String) {
+    fun fundProject(projectIdx: BigInteger, amountString: String, unit: FundingUnit = FundingUnit.ETH) {
         viewModelScope.launch {
             _uiState.value = DetailUiState.FundingInProgress
 
             val amount = try {
-                BigDecimal(amountEth)
+                BigDecimal(amountString)
             } catch (e: Exception) {
                 _uiState.value = DetailUiState.Error("Invalid amount")
                 return@launch
@@ -62,14 +65,17 @@ class ProjectDetailViewModel @Inject constructor(
                 return@launch
             }
 
-            when (val result = repository.fundProjectInEth(projectIdx, amount)) {
-                is Web3Result.Success -> {
-                    // Get funding details from event
-                    val events = CrowdSourcing.getProjectFundedEvents(result.data)
-                    val event = events.firstOrNull()
+            // Convert to Wei based on selected unit
+            val amountInWei = when (unit) {
+                FundingUnit.ETH -> Convert.toWei(amount, Convert.Unit.ETHER).toBigInteger()
+                FundingUnit.GWEI -> Convert.toWei(amount, Convert.Unit.GWEI).toBigInteger()
+                FundingUnit.WEI -> amount.toBigInteger()
+            }
 
+            when (val result = repository.fundProject(projectIdx, amountInWei)) {
+                is Web3Result.Success -> {
                     _uiState.value = DetailUiState.FundingSuccess(
-                        "Successfully funded with $amountEth ETH!"
+                        "Successfully funded with $amountString ${unit.name}!"
                     )
 
                     // Reload project to show updated funding

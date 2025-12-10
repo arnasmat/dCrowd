@@ -55,7 +55,7 @@ fun ProjectListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("dCrowd <3") },
+                title = { Text("dCrowd ar kazkas tokio") },
                 actions = {
                     IconButton(onClick = onSetupClick) {
                         Icon(Icons.Default.Settings, "Setup")
@@ -165,11 +165,11 @@ fun EmptyProjectCard() {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "No Projects Yet",
+                text = "No active projects found",
                 style = MaterialTheme.typography.headlineSmall
             )
             Text(
-                text = "Create your first project!",
+                text = "sukurk projekta plz :)",
                 style = MaterialTheme.typography.bodyMedium
             )
         }
