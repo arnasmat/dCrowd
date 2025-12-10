@@ -8,6 +8,7 @@ import com.arnasmat.dcrowd.data.web3.UserManager
 import com.arnasmat.dcrowd.data.web3.Web3Config
 import com.arnasmat.dcrowd.data.web3.Web3ConfigManager
 import com.arnasmat.dcrowd.data.web3.Web3Result
+import com.arnasmat.dcrowd.data.web3.parseWeb3Error
 import kotlinx.coroutines.flow.Flow
 import org.web3j.protocol.core.methods.response.TransactionReceipt
 import org.web3j.utils.Convert
@@ -35,7 +36,7 @@ class CrowdFundingRepository @Inject constructor(
             userManager.loginUser(address, privateKey, name)
             Web3Result.Success(Unit)
         } catch (e: Exception) {
-            Web3Result.Error(e.message ?: "Failed to login", e)
+            Web3Result.Error(e.parseWeb3Error(), e)
         }
     }
 

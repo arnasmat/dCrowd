@@ -42,7 +42,7 @@ class CrowdSourcingWrapper @Inject constructor(
 
             Web3Result.Success(Unit)
         } catch (e: Exception) {
-            Web3Result.Error("Failed to initialize Web3: ${e.message}", e)
+            Web3Result.Error("Failed to initialize Web3: ${e.parseWeb3Error()}", e)
         }
     }
 
@@ -75,7 +75,7 @@ class CrowdSourcingWrapper @Inject constructor(
             val owner = contract.sysOwner().send()
             Web3Result.Success(owner)
         } catch (e: Exception) {
-            Web3Result.Error("Failed to get system owner: ${e.message}", e)
+            Web3Result.Error("Failed to get system owner: ${e.parseWeb3Error()}", e)
         }
     }
 
@@ -101,7 +101,7 @@ class CrowdSourcingWrapper @Inject constructor(
 
             Web3Result.Success(receipt)
         } catch (e: Exception) {
-            Web3Result.Error("Failed to create project: ${e.message}", e)
+            Web3Result.Error("Failed to create project: ${e.parseWeb3Error()}", e)
         }
     }
 
@@ -114,7 +114,7 @@ class CrowdSourcingWrapper @Inject constructor(
             val receipt = contract.fundProject(projectIdx, amountInWei).send()
             Web3Result.Success(receipt)
         } catch (e: Exception) {
-            Web3Result.Error("Failed to fund project: ${e.message}", e)
+            Web3Result.Error("Failed to fund project: ${e.parseWeb3Error()}", e)
         }
     }
 
@@ -125,7 +125,7 @@ class CrowdSourcingWrapper @Inject constructor(
                 val receipt = contract.checkCurrentMilestone(projectIdx).send()
                 Web3Result.Success(receipt)
             } catch (e: Exception) {
-                Web3Result.Error("Failed to check current milestone: ${e.message}", e)
+                Web3Result.Error("Failed to check current milestone: ${e.parseWeb3Error()}", e)
             }
         }
 
@@ -136,7 +136,7 @@ class CrowdSourcingWrapper @Inject constructor(
                 val receipt = contract.stopProject(projectIdx).send()
                 Web3Result.Success(receipt)
             } catch (e: Exception) {
-                Web3Result.Error("Failed to stop project: ${e.message}", e)
+                Web3Result.Error("Failed to stop project: ${e.parseWeb3Error()}", e)
             }
         }
 
@@ -179,7 +179,7 @@ class CrowdSourcingWrapper @Inject constructor(
 
                 Web3Result.Success(project)
             } catch (e: Exception) {
-                Web3Result.Error("Failed to get project: ${e.message}", e)
+                Web3Result.Error("Failed to get project: ${e.parseWeb3Error()}", e)
             }
         }
 
@@ -190,7 +190,7 @@ class CrowdSourcingWrapper @Inject constructor(
             val result = contract.getProjectInfo(projectIdx).send()
             Web3Result.Success(result)
         } catch (e: Exception) {
-            Web3Result.Error("Failed to get project info: ${e.message}", e)
+            Web3Result.Error("Failed to get project info: ${e.parseWeb3Error()}", e)
         }
     }
 
@@ -243,7 +243,7 @@ class CrowdSourcingWrapper @Inject constructor(
 
                 Web3Result.Success(projects)
             } catch (e: Exception) {
-                Web3Result.Error("Failed to get all active projects: ${e.message}", e)
+                Web3Result.Error("Failed to get all active projects: ${e.parseWeb3Error()}", e)
             }
         }
 
@@ -255,7 +255,7 @@ class CrowdSourcingWrapper @Inject constructor(
             }
             Web3Result.Success(balance?.balance ?: BigInteger.ZERO)
         } catch (e: Exception) {
-            Web3Result.Error("Failed to get balance: ${e.message}", e)
+            Web3Result.Error("Failed to get balance: ${e.parseWeb3Error()}", e)
         }
     }
 
@@ -267,7 +267,7 @@ class CrowdSourcingWrapper @Inject constructor(
             }
             Web3Result.Success(blockNumber?.blockNumber ?: BigInteger.ZERO)
         } catch (e: Exception) {
-            Web3Result.Error("Failed to get block number: ${e.message}", e)
+            Web3Result.Error("Failed to get block number: ${e.parseWeb3Error()}", e)
         }
     }
 
