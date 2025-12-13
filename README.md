@@ -19,18 +19,26 @@ Android app for a decentralized ethereum smart contract-based crowdfunding appli
 ### 1. Set up and deploy backend
 Prerequisites: set up [ganache-cli and truffle](https://archive.trufflesuite.com/docs/truffle/how-to/install/)
 1.1. [Clone the solidity backend.](https://github.com/arnasmat/Blockchain-4-dApps)
+
 1.2 Run `ganache-cli` in one terminal and `truffle migrate` in another in the cloned directory.
+
 1.3 Write down the contract address from `truffle migrate` and at least one of the accounts public and private keys from `ganche-cli`. They will be needed later.
+
 
 ### 2. Android
 2.1. Download apk from releases or build the application yourself how you typically would for android (The recommended method is by cloning it and building it via android studio).
+
 2.2. Launch the downloaded application on an Android emulator or mobile phone.
+
 2.3. Go to the settings:
+
  - If running on emulator and `ganache-cli` is hosted on localhost, set RPC url as `http://10.0.2.2:8545`
  - Enter the previously copied contract address received from `truffle migrate`
  - Log in with one of the accounts from the output of `ganache-cli` with a public and private key.
  - Save
+
 2.4. Go back to feed and refresh (swipe down)
+
 
 ### 3. (Optional) Further development
 3.1. If you plan on developing this application further, you will also need to set up [Web3j](https://docs.web3j.io/latest/quickstart/) to automate `data.sol.CrowdSourcing.java` generation. This is how you would typically autogen that file with Web3j CLI: (note - this is assuming you are running it from the backend folder, you will have to change path to dCrowd's android app)
