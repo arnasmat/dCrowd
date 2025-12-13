@@ -22,7 +22,8 @@ Android app for a decentralized ethereum smart contract-based crowdfunding appli
 <img width="250" alt="Project details screen" src="https://github.com/user-attachments/assets/676a89b8-b8fb-42bb-9ec9-765a22c64000" />
 <img width="250" alt="Halfway funded project" src="https://github.com/user-attachments/assets/2c4e0285-fb8a-41a4-8391-7412fbeb0545" />
 <img width="250" alt="Fully funded, cancelled or failed projects become inactive" src="https://github.com/user-attachments/assets/fc71ed1e-a811-4e62-913f-e32e032fdeea" />
-<img width="250" alt="Only active projects show up in the main screen" src="https://github.com/user-attachments/assets/4b8e1d19-dcc2-462f-9b3f-c24acd4c911f" />
+<img width="250" alt="Multiple projects in the list screen" src="https://github.com/user-attachments/assets/4cdc41ac-2c07-4628-a59d-99c21922c4f6" />
+
 
 
 
